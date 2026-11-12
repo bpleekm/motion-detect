@@ -21,7 +21,7 @@ def build(out, opencv_prefix):
     import pybind11
     root = sources()
     try:
-        flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "libavcodec", "libavformat", "libavutil", "libva", "libva-drm", "OpenCL"], text=True, stderr=subprocess.PIPE))
+        flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "libavcodec", "libavformat", "libavutil", "libswscale", "libva", "libva-drm", "OpenCL"], text=True, stderr=subprocess.PIPE))
     except (subprocess.CalledProcessError, FileNotFoundError):
         return hold(out, "native_development_libraries", "FFmpeg, VA and OpenCL development packages/pkg-config")
     common = ["g++", "-O3", "-std=c++17", "-shared", "-fPIC", "-pthread", "-ffp-contract=off",

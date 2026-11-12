@@ -23,6 +23,12 @@ Python>=3.11，依赖见pyproject。建议在外部工作根建立venv；设置`
 
 原生进程不导入Python cv2/av；MOG和Motion/空间共享VA context，输入Y/前景/raw热路径无CPU整图往返。所有构建和内核缓存由外部工作根管理；缺少SDK、模块或设备时状态hold，不选择CPU代跑。
 
+## 按需GPU人检
+
+`run --person-model "$PERSON_MODEL" --person-score 0.25`配置NanoDet权重。只有原候选触发条件满足才启动独立OpenCL DNN进程、按需获取BGR。前处理和NMS在CPU，网络前向OpenCL FP32；逐调用观测本进程GPU render增量并检查网络图没有CPU层回退。
+
+无模型或设备/执行位置不满足时，`person.status=hold`、`detections=null`，不会写成无人；像素主证据可继续完整输出，`status.person`汇总待补特征。模型指纹、原图下载/传输量及特征状态只进入私有运行目录。
+
 ## 提交
 
 真实视频/截图/清单/日志/权重/编译产物不提交。提交前检查status、diff、历史、暂存文件及内容；文档与实现同步，用指定作者/提交者身份commit并push。不要修改全局Git设置。

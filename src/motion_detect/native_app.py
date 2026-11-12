@@ -23,7 +23,7 @@ def gray_lut():
     return values[0].tolist()
 
 
-def run(input_path, out, build_root, *, source_manifest=None, sample_ms=200, watermark=(0, 0, 0, 0)):
+def run(input_path, out, build_root, *, source_manifest=None, sample_ms=200, watermark=(0, 0, 0, 0), person_model=None, person_score=.25):
     out = Path(out).resolve()
     out.mkdir(parents=True, exist_ok=False)
     build_root = Path(build_root).resolve() if build_root else None
@@ -46,7 +46,8 @@ def run(input_path, out, build_root, *, source_manifest=None, sample_ms=200, wat
     cfg = {"width": width, "height": height, "watermark": list(watermark), "gray_lut": gray_lut(),
            "files": source["files"], "output": str(out), "sample_ms": sample_ms,
            "capacity": math.ceil(source["total_ms"] / sample_ms) + 2,
-           "build_root": str(build_root), "kernel_root": str(Path(build["source_root"]) / "kernels")}
+           "build_root": str(build_root), "kernel_root": str(Path(build["source_root"]) / "kernels"),
+           "person_model": str(Path(person_model).resolve()) if person_model else None, "person_score": person_score}
     write(out / "native-config.json", cfg)
     env = dict(os.environ)
     env["LD_LIBRARY_PATH"] = str(Path(build["opencv_prefix"]) / "lib") + (":" + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")

@@ -5,17 +5,20 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/video/background_segm.hpp>
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 #include <nlohmann/json.hpp>
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/hwcontext.h>
 #include <libavutil/hwcontext_vaapi.h>
+#include <libswscale/swscale.h>
 }
 #include <array>
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <cstring>
 #include <condition_variable>
 #include <deque>
 #include <fstream>
@@ -51,6 +54,7 @@ class Engine{
     std::deque<int> free_slots;std::deque<std::shared_ptr<Lease>> ready;std::shared_ptr<Lease> current;std::thread producer;
     std::atomic<bool> stopped{false};bool done=false;std::string failure;
     std::atomic<uint64_t> decoded{0},selected{0},syncs{0};uint64_t updates=0,resident=0,peak=0,imports=0,acquires=0,releases=0;
+    uint64_t person_bgr_bytes=0,person_nv12_bytes=0;
     template<class T>void arg(cl_kernel k,int i,T value){clcheck(clSetKernelArg(k,i,sizeof(value),&value));}
     void launch(const std::string& name,int width,int height){size_t global[2]={(width+15)/16*16ul,(height+15)/16*16ul},local[2]={16,16};clcheck(clEnqueueNDRangeKernel(queue,kernels.at(name),2,nullptr,global,local,0,nullptr,nullptr));}
     int take(){std::unique_lock<std::mutex> lock(mutex);condition.wait(lock,[&]{return stopped || !free_slots.empty();});if(stopped)return -1;
@@ -139,12 +143,26 @@ public:
         ++updates;mog->apply(prepared,foreground,updates==1?1.:.006644493744965563);cv::ocl::finish();}
     void release(){if(!current)return;int slot=current->slot;current.reset();{std::lock_guard<std::mutex> lock(mutex);--resident;}give(slot);}
     std::string metadata(){return current->metadata.dump();}
+    py::array_t<uint8_t> bgr(){
+        if(!current)throw std::runtime_error("missing person frame lease");AVFrame* downloaded=av_frame_alloc();AVFrame* planar=av_frame_alloc();
+        {std::lock_guard<std::recursive_mutex> lock(*va_mutex);avcheck(av_hwframe_transfer_data(downloaded,current->frame,0));avcheck(av_frame_copy_props(downloaded,current->frame));}
+        if(downloaded->format!=AV_PIX_FMT_NV12)throw std::runtime_error("person download is not NV12");person_nv12_bytes+=uint64_t(w)*h*3/2;
+        planar->format=AV_PIX_FMT_YUV420P;planar->width=w;planar->height=h;avcheck(av_frame_get_buffer(planar,32));
+        for(int y=0;y<h;++y)memcpy(planar->data[0]+y*planar->linesize[0],downloaded->data[0]+(y+downloaded->crop_top)*downloaded->linesize[0]+downloaded->crop_left,w);
+        for(int y=0;y<h/2;++y)for(int x=0;x<w/2;++x){auto p=downloaded->data[1]+(y+downloaded->crop_top/2)*downloaded->linesize[1]+downloaded->crop_left+x*2;
+            planar->data[1][y*planar->linesize[1]+x]=p[0];planar->data[2][y*planar->linesize[2]+x]=p[1];}
+        py::array_t<uint8_t> image({py::ssize_t(h),py::ssize_t(w),py::ssize_t(3)});uint8_t* target[]={image.mutable_data(),nullptr,nullptr,nullptr};int pitch[]={w*3,0,0,0};
+        auto context=sws_getContext(w,h,AV_PIX_FMT_YUV420P,w,h,AV_PIX_FMT_BGR24,SWS_BILINEAR,nullptr,nullptr,nullptr);if(!context)throw std::runtime_error("person color context failed");
+        int rows=sws_scale(context,planar->data,planar->linesize,0,h,target,pitch);sws_freeContext(context);av_frame_free(&downloaded);av_frame_free(&planar);
+        if(rows!=h)throw std::runtime_error("incomplete person color frame");person_bgr_bytes+=uint64_t(w)*h*3;return image;
+    }
     uintptr_t context_handle(){return (uintptr_t)context;}uintptr_t queue_handle(){return (uintptr_t)queue;}
     uintptr_t prepared_handle(){return (uintptr_t)prepared.handle(cv::ACCESS_READ);}
     uintptr_t foreground_handle(){return (uintptr_t)foreground.handle(cv::ACCESS_READ);}uint64_t stride(){return foreground.step[0];}uint64_t offset(){return foreground.offset;}
     std::string metrics(){return Json({{"decoded_frames",decoded.load()},{"selected_frames",selected.load()},{"model_updates",updates},{"surface_syncs",syncs.load()},
-        {"resident_peak",peak},{"resident_at_end",resident},{"imports",imports},{"acquires",acquires},{"releases",releases},{"host_y_upload_bytes",0},{"files",files}}).dump();}
+        {"resident_peak",peak},{"resident_at_end",resident},{"imports",imports},{"acquires",acquires},{"releases",releases},{"host_y_upload_bytes",0},
+        {"person_bgr_bytes",person_bgr_bytes},{"person_nv12_download_bytes",person_nv12_bytes},{"files",files}}).dump();}
 };
 PYBIND11_MODULE(_motion_gpu_front,m){py::class_<Engine>(m,"Engine").def(py::init<const std::string&,const std::string&>()).def("next",&Engine::next).def("preprocess",&Engine::preprocess)
     .def("release",&Engine::release).def("metadata",&Engine::metadata).def("context_handle",&Engine::context_handle).def("queue_handle",&Engine::queue_handle)
-    .def("prepared_handle",&Engine::prepared_handle).def("foreground_handle",&Engine::foreground_handle).def("stride",&Engine::stride).def("offset",&Engine::offset).def("metrics",&Engine::metrics);}
+    .def("prepared_handle",&Engine::prepared_handle).def("foreground_handle",&Engine::foreground_handle).def("stride",&Engine::stride).def("offset",&Engine::offset).def("bgr",&Engine::bgr).def("metrics",&Engine::metrics);}

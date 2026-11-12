@@ -13,4 +13,6 @@
 
 消费者必须验证complete、文件指纹、帧ID与时间顺序。`mog_pass`是MOG低档通过，`motion_pass`是严格Motion通过。布尔值不是语义正确性的置信分。
 
+可选`person`观测的status为skipped/complete/hold，backend为opencl-fp32；skipped或hold的detections为null，真正完成且无人为[]。complete另有模型SHA、GPU render执行增量与CPU层回退标记。status.json.person汇总requested/completed/held；optional特征hold不伪造像素主证据失败或人物阴性。
+
 [`schemas/detection-v1.json`](../schemas/detection-v1.json)定义观测格式。新增可选字段可保持v1兼容；改变时间、身份或字段语义必须升级协议。motion-evidence使用合成fixture检验兼容性。

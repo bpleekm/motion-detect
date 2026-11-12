@@ -22,7 +22,7 @@ def source_for_video(path):
                            "source_start_pts": int(stream.start_time or 0), "width": stream.width, "height": stream.height}]}
 
 
-def run(input_path, out, *, source_manifest=None, sample_ms=200, watermark=(0, 0, 0, 0)):
+def run(input_path, out, *, source_manifest=None, sample_ms=200, watermark=(0, 0, 0, 0), person_model=None, person_score=.25):
     import av
     from .core import ReferenceCore
     out = Path(out)
@@ -51,6 +51,8 @@ def run(input_path, out, *, source_manifest=None, sample_ms=200, watermark=(0, 0
     selected = decoded = 0
     last = None
     files = []
+    from .person_client import GpuPersonClient, needed
+    person = GpuPersonClient(out, person_model, person_score)
     with (out / "frames.jsonl").open("w") as index, (out / "observations.jsonl").open("w") as observations:
         for item in source["files"]:
             count = chosen = 0
@@ -74,6 +76,10 @@ def run(input_path, out, *, source_manifest=None, sample_ms=200, watermark=(0, 0
                     if core is None:
                         core = ReferenceCore(frame.width, frame.height, watermark)
                     evidence = core.process(frame.to_ndarray(format="gray"))
+                    if needed(evidence):
+                        evidence["person"] = person.detect(lambda: frame.to_ndarray(format="bgr24"))
+                    else:
+                        evidence["person"] = {"status": "skipped", "backend": "opencl-fp32", "detections": None}
                     selected += 1
                     chosen += 1
                     emit(observations, {"frame_id": frame_id, "time_ms": ms, "seq": selected, **evidence})
@@ -81,7 +87,8 @@ def run(input_path, out, *, source_manifest=None, sample_ms=200, watermark=(0, 0
             files.append({"file_id": item["file_id"], "decoded_frames": count, "selected_frames": chosen, "decoder_eof": True})
     if not decoded:
         return hold(out, "decoded_frames", "source containing decodable frames")
-    result = {"schema_version": SCHEMA, "status": "complete", "backend": "cpu-reference",
+    person.close()
+    result = {"schema_version": SCHEMA, "status": "complete", "backend": "cpu-reference", "person": person.summary(),
               "precision": "CPU double feedback; not a GPU FP32 performance claim", "sample_ms": sample_ms,
               "decoded_frames": decoded, "selected_frames": selected, "files": files,
               "wall_seconds": time.perf_counter() - began,

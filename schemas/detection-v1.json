@@ -8,7 +8,7 @@
     "frame_id": {"type": "string"}, "time_ms": {"type": "integer"}, "seq": {"type": "integer", "minimum": 1},
     "mog_pass": {"type": "boolean"}, "motion_pass": {"type": "boolean"},
     "has_candidate": {"type": "boolean"}, "warming": {"type": "boolean"},
-    "regions": {"type": "object"}, "model": {"type": "object"}
+    "regions": {"type": "object"}, "model": {"type": "object"}, "person": {"type": "object"}
   },
   "additionalProperties": false
 }
