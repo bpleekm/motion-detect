@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:motion-detect:v1",
+  "title": "Detection observation",
+  "type": "object",
+  "required": ["frame_id", "time_ms", "seq", "mog_pass", "motion_pass", "has_candidate", "warming", "regions"],
+  "properties": {
+    "frame_id": {"type": "string"}, "time_ms": {"type": "integer"}, "seq": {"type": "integer", "minimum": 1},
+    "mog_pass": {"type": "boolean"}, "motion_pass": {"type": "boolean"},
+    "has_candidate": {"type": "boolean"}, "warming": {"type": "boolean"},
+    "regions": {"type": "object"}, "model": {"type": "object"}
+  },
+  "additionalProperties": false
+}
