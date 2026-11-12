@@ -4,7 +4,7 @@
 
 输入原片，输出真实PTS帧索引、MOG/Motion空间证据和完整解码状态。检测结果是测量，不直接代表“值得原速保留”。
 
-交付阶段：CPU reference与完整索引主流程已通过合成验证；原生GPU与按需GPU人检分批接入。
+交付阶段：CPU reference与独立原生GPU已通过合成主流程验证；按需GPU人检独立增量接入。
 
 ## 主流程
 
@@ -21,7 +21,7 @@ export PYTHONPATH="$DETECT_REPO/src"
 
 `RUN_ROOT`应位于工作区外部的私有临时根，输出目录必须新建。缺少输入或时长等必需数据时生成`status: hold`；补齐后用新的运行目录重跑。
 
-当前可运行入口是明确标记的`cpu-reference`：迁移MOG/Motion/形态学/4conn语义，用于跑通协议和流程。它不冒充原生GPU方案的精度或性能。原生VA/OpenCL主线整理见[核心方案](docs/core-design.md)和[路线](docs/roadmap.md)。
+默认`cpu-reference`是明确标记的CPU double反馈对照。原生GPU入口通过`--backend native-gpu --native-build "$NATIVE_BUILD"`使用；两者精度/性能分别记录，不静默回退。原生VA/OpenCL主线见[核心方案](docs/core-design.md)和[路线](docs/roadmap.md)。
 
 ## 文档
 

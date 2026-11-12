@@ -12,6 +12,17 @@ Python>=3.11，依赖见pyproject。建议在外部工作根建立venv；设置`
 
 `status: hold`表示缺少数据。先集中登记，补齐时统一创建新运行。指纹变化或非法身份应修复来源，不以放宽校验绕过。
 
+## 原生GPU
+
+需要系统FFmpeg/VA/OpenCL开发库，以及单独的OpenCL-enabled OpenCV4.12 core/video SDK。只读SDK前缀显式传入，不替换Python wheel。构建始终写外部目录：
+
+```sh
+"$PYTHON" -B -m motion_detect.cli build-native --out "$NATIVE_BUILD" --opencv-prefix "$PRIVATE_OPENCV_PREFIX"
+"$PYTHON" -B -m motion_detect.cli run --input "$INPUT_VIDEO" --out "$RUN_ROOT/gpu" --backend native-gpu --native-build "$NATIVE_BUILD"
+```
+
+原生进程不导入Python cv2/av；MOG和Motion/空间共享VA context，输入Y/前景/raw热路径无CPU整图往返。所有构建和内核缓存由外部工作根管理；缺少SDK、模块或设备时状态hold，不选择CPU代跑。
+
 ## 提交
 
 真实视频/截图/清单/日志/权重/编译产物不提交。提交前检查status、diff、历史、暂存文件及内容；文档与实现同步，用指定作者/提交者身份commit并push。不要修改全局Git设置。

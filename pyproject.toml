@@ -19,6 +19,9 @@ motion-detect = "motion_detect.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/motion_detect"]
 
+[tool.hatch.build.targets.wheel.force-include]
+native = "motion_detect/native"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
