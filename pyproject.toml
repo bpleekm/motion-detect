@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "motion-detect"
+version = "0.1.0"
+description = "Frame-identified motion evidence for bounded semantic review"
+requires-python = ">=3.11"
+dependencies = ["av>=16,<17", "numpy>=2,<3", "opencv-python-headless>=4.12,<4.13"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+native = ["pybind11>=3,<4"]
+
+[project.scripts]
+motion-detect = "motion_detect.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/motion_detect"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
