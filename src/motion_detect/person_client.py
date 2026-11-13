@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-def needed(observation):
+def needs_person_detection(observation):
     return (
         not observation["warming"]
         and observation["has_candidate"]

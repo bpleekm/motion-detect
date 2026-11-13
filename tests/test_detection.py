@@ -3,9 +3,9 @@ from pathlib import Path
 
 import numpy as np
 
-from motion_detect.app import run
+from motion_detect.artifacts import read_json, read_json_lines
 from motion_detect.core import ReferenceCore, components, denoise
-from motion_detect.io import load, rows
+from motion_detect.pipeline import run_detection
 
 
 def synthetic(path):
@@ -19,9 +19,9 @@ def synthetic(path):
 def test_complete_identity_and_eof(tmp_path):
     video = synthetic(tmp_path / "source.mkv")
     out = tmp_path / "detect"
-    status = run(video, out)
-    index = list(rows(out / "frames.jsonl"))
-    selected = list(rows(out / "observations.jsonl"))
+    status = run_detection(video, out)
+    index = list(read_json_lines(out / "frames.jsonl"))
+    selected = list(read_json_lines(out / "observations.jsonl"))
     assert status["status"] == "complete"
     assert status["decoded_frames"] == len(index) == 120
     assert status["selected_frames"] == len(selected) == 30
@@ -29,11 +29,11 @@ def test_complete_identity_and_eof(tmp_path):
     assert [x["time_ms"] for x in index] == list(range(0, 6000, 50))
     assert all(b["time_ms"] - a["time_ms"] >= 200 for a, b in zip(selected, selected[1:]))
     assert status["files"][0]["decoder_eof"]
-    assert load(out / "source.json")["total_ms"] == 6000
+    assert read_json(out / "source.json")["total_ms"] == 6000
 
 
 def test_missing_media_is_hold(tmp_path):
-    status = run(tmp_path / "missing.mkv", tmp_path / "detect")
+    status = run_detection(tmp_path / "missing.mkv", tmp_path / "detect")
     assert status["status"] == "hold"
     assert status["missing"][0]["code"] == "input_media"
 

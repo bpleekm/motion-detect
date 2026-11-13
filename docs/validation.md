@@ -17,3 +17,11 @@
 测试输出与pytest缓存通过外部`WORK_ROOT`和`--basetemp`重定向。真实数据只读使用、报告私有保存，公开仓库仅保留合成测试和方法。
 
 跨仓库烟测由motion-evidence的`tools/integration_smoke.py`调用检测CLI；支持CPU reference和显式native-gpu/native-build，使用合成媒体、空env和模拟Responses验证主流程，直接源文件依赖只通过版本化文件传递。
+
+## 内部命名与模块整理回归
+
+本次整理通过8项检测端测试、Ruff检查和CPU/native-GPU两条CLI烟测；每条完成120解码帧/30选帧，并由对端验证锁定范围和6000ms时间线覆盖。
+
+合成回归的CPU全帧索引与观测、GPU观测与模型轨迹同整理前逐字节一致。GPU全帧源身份、PTS、顺序和尺寸一致；运行内`slot_id`/`generation`单独校验槽范围与代际递增，不要求异步运行之间的槽分配相同。
+
+wheel构建检查包含新Python模块和`video_frontend.cpp`/`motion_spatial.cpp`源码，不包含媒体、凭据、权重或编译二进制。原生格式/实现命名整理使用重新构建的模块通过GPU烟测，随后Python入口整理复用该构建验证。

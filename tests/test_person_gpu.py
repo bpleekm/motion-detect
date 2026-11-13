@@ -1,16 +1,16 @@
 import pytest
 
-from motion_detect.person_client import GpuPersonClient, needed
+from motion_detect.person_client import GpuPersonClient, needs_person_detection
 from motion_detect.person_gpu import GpuPersonDetector, PersonGpuHold
 
 
 def test_on_demand_trigger_is_unchanged():
     base = {"warming": False, "has_candidate": True, "mog_pass": False, "motion_pass": False}
-    assert needed(base)
-    assert not needed(base | {"warming": True})
-    assert not needed(base | {"has_candidate": False})
-    assert not needed(base | {"mog_pass": True})
-    assert not needed(base | {"motion_pass": True})
+    assert needs_person_detection(base)
+    assert not needs_person_detection(base | {"warming": True})
+    assert not needs_person_detection(base | {"has_candidate": False})
+    assert not needs_person_detection(base | {"mog_pass": True})
+    assert not needs_person_detection(base | {"motion_pass": True})
 
 
 def test_missing_model_holds_before_downloading_image(tmp_path):

@@ -6,6 +6,7 @@
 - 模块/函数/变量用snake_case，类型用PascalCase，常量用UPPER_SNAKE_CASE。
 - 命名表达职责：source_manifest、output_dir、frame_metadata、gpu_metrics。图像局部坐标x/y及明确范围内的数学索引可用短名。
 - CLI入口只解析与调度；媒体处理、构建、进程通信分别归对应模块。源路径只在运行参数中传入。
+- 命令解析集中在`build_parser`，子命令解析器用`run_parser`/`native_build_parser`等职责名；调度调用`run_detection`/`build_native_modules`，避免变量遮蔽导入的实现。
 - 对外入口补简短职责说明，异常/hold保留明确语义；不因格式整理改变检测数学或输出协议。
 
 ```sh

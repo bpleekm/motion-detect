@@ -7,37 +7,37 @@ from pathlib import Path
 SCHEMA = "motion-detect/v1"
 
 
-def digest(path):
+def file_sha256(path):
     with Path(path).open("rb") as stream:
         return file_digest(stream, "sha256").hexdigest()
 
 
-def write(path, value):
+def write_json(path, value):
     Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
 
 
-def load(path):
+def read_json(path):
     return json.loads(Path(path).read_text())
 
 
-def rows(path):
+def read_json_lines(path):
     with Path(path).open() as stream:
         for line in stream:
             if line.strip():
                 yield json.loads(line)
 
 
-def emit(stream, value):
+def write_json_line(stream, value):
     stream.write(json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
-def hold(out, code, requirement):
-    out = Path(out)
-    out.mkdir(parents=True, exist_ok=True)
+def write_hold_status(output_dir, code, requirement):
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
     value = {
         "schema_version": SCHEMA,
         "status": "hold",
         "missing": [{"code": code, "requirement": requirement}],
     }
-    write(out / "status.json", value)
+    write_json(output_dir / "status.json", value)
     return value
