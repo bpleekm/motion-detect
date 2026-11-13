@@ -65,7 +65,7 @@ def build(out, opencv_prefix):
         "front": common
         + [
             "-I" + str(cv / "include/opencv4"),
-            str(root / "front.cpp"),
+            str(root / "video_frontend.cpp"),
             "-L" + str(cv / "lib"),
             "-Wl,-rpath," + str(cv / "lib"),
             "-lopencv_video",
@@ -75,7 +75,12 @@ def build(out, opencv_prefix):
             str(out / ("_motion_gpu_front" + suffix)),
         ],
         "math": common
-        + [str(root / "math.cpp"), "-lOpenCL", "-o", str(out / ("_motion_gpu_math" + suffix))],
+        + [
+            str(root / "motion_spatial.cpp"),
+            "-lOpenCL",
+            "-o",
+            str(out / ("_motion_gpu_math" + suffix)),
+        ],
     }
     for name, command in commands.items():
         result = subprocess.run(command, text=True, capture_output=True)
