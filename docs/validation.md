@@ -15,3 +15,5 @@
 性能包含初始化/解码/同步/日志/排空，记录实际后端、源码/输入指纹和资源；阶段重叠，不求和替代墙钟。旧工程的实测不自动成为新仓库的成绩。
 
 测试输出与pytest缓存通过外部`WORK_ROOT`和`--basetemp`重定向。真实数据只读使用、报告私有保存，公开仓库仅保留合成测试和方法。
+
+跨仓库烟测由motion-evidence的`tools/integration_smoke.py`调用检测CLI；支持CPU reference和显式native-gpu/native-build，使用合成媒体、空env和模拟Responses验证主流程，直接源文件依赖只通过版本化文件传递。
