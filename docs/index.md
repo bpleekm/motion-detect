@@ -11,5 +11,6 @@
 | [validation](validation.md) | 正确性、主流程和性能分别怎样验证 |
 | [operations](operations.md) | 安装、运行、hold、隐私与Git维护 |
 | [roadmap](roadmap.md) | 已实现、待验证与后续阶段 |
+| [code-style](code-style.md) | 命名、格式、模块职责及风格检查 |
 
 “已实现”不自动等于“已完成真实素材质量验证”；性能数字只进入私有运行报告。

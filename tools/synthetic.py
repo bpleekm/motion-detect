@@ -1,4 +1,5 @@
 """Generate a reproducible, non-private integration clip outside the repository."""
+
 import argparse
 from fractions import Fraction
 from pathlib import Path
@@ -15,12 +16,16 @@ def generate(path, codec="ffv1"):
         stream.width, stream.height, stream.pix_fmt = 96, 64, "yuv420p"
         stream.time_base = Fraction(1, 20)
         if codec == "libx264":
-            stream.options = {"preset": "ultrafast", "tune": "zerolatency", "x264-params": "keyint=20:min-keyint=20:scenecut=0"}
+            stream.options = {
+                "preset": "ultrafast",
+                "tune": "zerolatency",
+                "x264-params": "keyint=20:min-keyint=20:scenecut=0",
+            }
         for index in range(120):
             pixels = np.full((64, 96, 3), 40, np.uint8)
             if 30 <= index < 70:
                 x = 4 + (index - 30) % 50
-                pixels[20:40, x:x+20] = 210
+                pixels[20:40, x : x + 20] = 210
             if 70 <= index < 90:
                 pixels[:] = 40 if index % 2 else 120
             frame = av.VideoFrame.from_ndarray(pixels, format="rgb24")

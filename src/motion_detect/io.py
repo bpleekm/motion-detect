@@ -1,6 +1,7 @@
 """Small versioned artifacts; all output paths are supplied by the caller."""
-from hashlib import file_digest
+
 import json
+from hashlib import file_digest
 from pathlib import Path
 
 SCHEMA = "motion-detect/v1"
@@ -33,6 +34,10 @@ def emit(stream, value):
 def hold(out, code, requirement):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    value = {"schema_version": SCHEMA, "status": "hold", "missing": [{"code": code, "requirement": requirement}]}
+    value = {
+        "schema_version": SCHEMA,
+        "status": "hold",
+        "missing": [{"code": code, "requirement": requirement}],
+    }
     write(out / "status.json", value)
     return value

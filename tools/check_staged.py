@@ -1,4 +1,5 @@
 """Check the actual staged blobs without printing their potentially private contents."""
+
 import re
 import subprocess
 import sys
@@ -8,16 +9,28 @@ BLOCKED = {".mp4", ".mkv", ".png", ".jpg", ".jpeg", ".so", ".onnx", ".pt", ".saf
 PATTERNS = {
     "credential": re.compile(rb"(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}"),
     "private-home-path": re.compile(rb"/(?:home|root)/[A-Za-z0-9_.-]+/"),
-    "private-network": re.compile(rb"\b(?:10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})\b"),
+    "private-network": re.compile(
+        rb"\b(?:10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})\b"
+    ),
 }
 
 
 def main():
-    names = subprocess.check_output(["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"]).decode().split("\0")
+    names = (
+        subprocess.check_output(
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"]
+        )
+        .decode()
+        .split("\0")
+    )
     errors = []
     for name in filter(None, names):
         path = PurePosixPath(name)
-        if (path.name.startswith(".env") and path.name != ".env.example") or path.suffix.lower() in BLOCKED or any(x in {"runs", "data", "build", "dist", ".venv"} for x in path.parts):
+        if (
+            (path.name.startswith(".env") and path.name != ".env.example")
+            or path.suffix.lower() in BLOCKED
+            or any(x in {"runs", "data", "build", "dist", ".venv"} for x in path.parts)
+        ):
             errors.append((name, "artifact-or-env"))
             continue
         data = subprocess.check_output(["git", "show", ":" + name])

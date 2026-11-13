@@ -1,9 +1,10 @@
 """Parent media metadata stays isolated from the private native pixel process."""
+
 import math
 import os
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 from .app import source_for_video
 from .io import digest, hold, load, write
@@ -12,6 +13,7 @@ from .io import digest, hold, load, write
 def gray_lut():
     import av
     import numpy as np
+
     frame = av.VideoFrame(256, 16, "yuv420p")
     frame.color_range = 1
     frame.planes[0].update(np.tile(np.arange(256, dtype=np.uint8), (16, 1)))
@@ -23,7 +25,17 @@ def gray_lut():
     return values[0].tolist()
 
 
-def run(input_path, out, build_root, *, source_manifest=None, sample_ms=200, watermark=(0, 0, 0, 0), person_model=None, person_score=.25):
+def run(
+    input_path,
+    out,
+    build_root,
+    *,
+    source_manifest=None,
+    sample_ms=200,
+    watermark=(0, 0, 0, 0),
+    person_model=None,
+    person_score=0.25,
+):
     out = Path(out).resolve()
     out.mkdir(parents=True, exist_ok=False)
     build_root = Path(build_root).resolve() if build_root else None
@@ -33,7 +45,13 @@ def run(input_path, out, build_root, *, source_manifest=None, sample_ms=200, wat
     for name, expected in build["modules"].items():
         if digest(build_root / name) != expected:
             raise ValueError("native module changed")
-    source = load(source_manifest) if source_manifest else source_for_video(input_path) if input_path and Path(input_path).is_file() else None
+    source = (
+        load(source_manifest)
+        if source_manifest
+        else source_for_video(input_path)
+        if input_path and Path(input_path).is_file()
+        else None
+    )
     if source is None:
         return hold(out, "input_media", "input video or source manifest")
     for item in source["files"]:
@@ -43,17 +61,35 @@ def run(input_path, out, build_root, *, source_manifest=None, sample_ms=200, wat
             raise ValueError("source fingerprint changed")
     width, height = source["files"][0]["width"], source["files"][0]["height"]
     write(out / "source.json", source)
-    cfg = {"width": width, "height": height, "watermark": list(watermark), "gray_lut": gray_lut(),
-           "files": source["files"], "output": str(out), "sample_ms": sample_ms,
-           "capacity": math.ceil(source["total_ms"] / sample_ms) + 2,
-           "build_root": str(build_root), "kernel_root": str(Path(build["source_root"]) / "kernels"),
-           "person_model": str(Path(person_model).resolve()) if person_model else None, "person_score": person_score}
+    cfg = {
+        "width": width,
+        "height": height,
+        "watermark": list(watermark),
+        "gray_lut": gray_lut(),
+        "files": source["files"],
+        "output": str(out),
+        "sample_ms": sample_ms,
+        "capacity": math.ceil(source["total_ms"] / sample_ms) + 2,
+        "build_root": str(build_root),
+        "kernel_root": str(Path(build["source_root"]) / "kernels"),
+        "person_model": str(Path(person_model).resolve()) if person_model else None,
+        "person_score": person_score,
+    }
     write(out / "native-config.json", cfg)
     env = dict(os.environ)
-    env["LD_LIBRARY_PATH"] = str(Path(build["opencv_prefix"]) / "lib") + (":" + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")
+    env["LD_LIBRARY_PATH"] = str(Path(build["opencv_prefix"]) / "lib") + (
+        ":" + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else ""
+    )
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     with (out / "worker.log").open("w") as log:
-        result = subprocess.run([sys.executable, "-B", "-m", "motion_detect.worker", str(out / "native-config.json")], env=env, stdout=log, stderr=log)
+        result = subprocess.run(
+            [sys.executable, "-B", "-m", "motion_detect.worker", str(out / "native-config.json")],
+            env=env,
+            stdout=log,
+            stderr=log,
+        )
     if result.returncode:
-        return hold(out, "native_runtime", "inspect private worker.log; CPU fallback was not selected")
+        return hold(
+            out, "native_runtime", "inspect private worker.log; CPU fallback was not selected"
+        )
     return load(out / "status.json")

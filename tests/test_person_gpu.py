@@ -33,7 +33,9 @@ def test_missing_gpu_model_never_selects_cpu(tmp_path):
 
 def test_graph_cpu_fallback_is_hold(tmp_path, monkeypatch):
     import numpy as np
+
     from motion_detect import person_gpu
+
     model = tmp_path / "fake.onnx"
     model.write_bytes(b"fake network fixture")
 
